@@ -8,6 +8,6 @@ categories_df = pd.read_csv('MLB_GroupedSimple.csv')  # Replace 'categories.csv'
 merged_df = pd.merge(categories_df, stats_df, on='Name', how='inner')
 
 # Save the final merged dataframe to a new CSV
-merged_df.to_csv('merged_output.csv', index=False)
+merged_df.to_csv('mergedOutput.csv', index=False)
 
 print("Merged CSV saved as 'merged_output.csv'")

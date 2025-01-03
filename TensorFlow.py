@@ -8,7 +8,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Input
 from tensorflow.keras.optimizers import Adam
 
-data = pd.read_csv('merged_output.csv')
+data = pd.read_csv('mergedOutput.csv')
 
 X = data[['PA', 'BB%', 'K%', 'ISO', 'GB%', 'wRC+']].values
 y = data['category'].values
@@ -33,3 +33,10 @@ model = Sequential([
 model.compile(optimizer=Adam(learning_rate=0.001), 
               loss='categorical_crossentropy', 
               metrics=['accuracy'])
+
+history = model.fit(X_train, y_train, epochs=50, batch_size=8, validation_data=(X_test, y_test))
+
+test_loss, test_accuracy = model.evaluate(X_test, y_test)
+print(f"Test Accuracy: {test_accuracy:.2f}")
+
+
