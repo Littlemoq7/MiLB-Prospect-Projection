@@ -12,7 +12,7 @@ scaler.fit_transform(X)
 milbHitters = pd.read_csv("weightedMiLBStats.csv")
 
 # List of player names
-playerNames = ["Roman Anthony", "Walker Jenkins", "Brooks Brannon"]
+playerNames = ["Roman Anthony", "Walker Jenkins", "Brooks Brannon", "Mike Trout", "Juan Soto"]
 
 # Query players from the list of names
 playerPredictList = milbHitters[milbHitters['Name'].isin(playerNames)].values.tolist()
@@ -22,5 +22,5 @@ for player in playerPredictList:
     new_player = [player[1:]]
     new_player = scaler.transform(new_player)
     prediction = model.predict(new_player)
-    predicted_category = prediction.argmax() + 1
+    predicted_category = prediction
     print(f"{player[0]} Predicted Category: {predicted_category}")
