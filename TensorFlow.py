@@ -39,7 +39,11 @@ history = model.fit(X_train, y_train, epochs=50, batch_size=8, validation_data=(
 test_loss, test_accuracy = model.evaluate(X_test, y_test)
 print(f"Test Accuracy: {test_accuracy:.2f}")
 
-new_player = [[230,0.1,0.29130434699999996,0.14492753600000002,0.449275362,114.00819401335193]]  # Example stats for a new player
+if test_accuracy > 0.58:
+    model.save("model.keras", overwrite=True, include_optimizer=True)
+    print("saved")
+
+new_player = [[230,0.1,0.29130434699999996,0.14492753600000002,0.449275362,114.00819401335193]] 
 new_player = scaler.transform(new_player)
 prediction = model.predict(new_player)
 predicted_category = prediction.argmax() + 1
