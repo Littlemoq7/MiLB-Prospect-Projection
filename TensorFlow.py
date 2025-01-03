@@ -34,7 +34,7 @@ model.compile(optimizer=Adam(learning_rate=0.001),
               loss='categorical_crossentropy', 
               metrics=['accuracy'])
 
-history = model.fit(X_train, y_train, epochs=50, batch_size=8, validation_data=(X_test, y_test))
+history = model.fit(X_train, y_train, epochs=60, batch_size=8, validation_data=(X_test, y_test))
 
 test_loss, test_accuracy = model.evaluate(X_test, y_test)
 print(f"Test Accuracy: {test_accuracy:.2f}")
@@ -56,5 +56,5 @@ for player in playerPredictList:
     new_player = [player[1:]]
     new_player = scaler.transform(new_player)
     prediction = model.predict(new_player)
-    predicted_category = prediction.argmax() + 1
+    predicted_category = prediction
     print(f"{player[0]} Predicted Category: {predicted_category}")
