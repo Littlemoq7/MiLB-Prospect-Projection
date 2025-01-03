@@ -9,9 +9,18 @@ X = data[['PA', 'BB%', 'K%', 'ISO', 'GB%', 'wRC+']].values
 scaler = StandardScaler()
 scaler.fit_transform(X)
 
+milbHitters = pd.read_csv("weightedMiLBStats.csv")
 
-new_player = [[230,0.1,0.29130434699999996,0.14492753600000002,0.449275362,114.00819401335193]] 
-new_player = scaler.transform(new_player)
-prediction = model.predict(new_player)
-predicted_category = prediction.argmax() + 1
-print(f"Predicted Category: {predicted_category}")
+# List of player names
+playerNames = ["Roman Anthony", "Walker Jenkins", "Brooks Brannon"]
+
+# Query players from the list of names
+playerPredictList = milbHitters[milbHitters['Name'].isin(playerNames)].values.tolist()
+
+# Predict players in list of players
+for player in playerPredictList:
+    new_player = [player[1:]]
+    new_player = scaler.transform(new_player)
+    prediction = model.predict(new_player)
+    predicted_category = prediction.argmax() + 1
+    print(f"{player[0]} Predicted Category: {predicted_category}")

@@ -39,6 +39,10 @@ history = model.fit(X_train, y_train, epochs=50, batch_size=8, validation_data=(
 test_loss, test_accuracy = model.evaluate(X_test, y_test)
 print(f"Test Accuracy: {test_accuracy:.2f}")
 
+if test_accuracy > 0.55:
+    model.save("model.keras", overwrite=True, include_optimizer=True)
+    print("saved")
+
 milbHitters = pd.read_csv("weightedMiLBStats.csv")
 
 # List of player names
