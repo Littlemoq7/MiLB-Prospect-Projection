@@ -1,29 +1,35 @@
 import tensorflow as tf
-import numpy as np
 import pandas as pd
-print("TensorFlow version:", tf.__version__)
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
-dataframe = pd.read_csv('Baseball.csv')
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Input
+from tensorflow.keras.optimizers import Adam
 
-train, val, test = np.split(dataframe.sample(frac=1), [int(0.8*len(dataframe)), int(0.9*len(dataframe))])
+data = pd.read_csv('merged_output.csv')
 
-def df_to_dataset(dataframe, shuffle=True, batch_size=32):
-  df = dataframe.copy()
-  labels = df.pop('category')
-  df = {key: value.to_numpy()[:,tf.newaxis] for key, value in dataframe.items()}
-  ds = tf.data.Dataset.from_tensor_slices((dict(df), labels))
-  if shuffle:
-    ds = ds.shuffle(buffer_size=len(dataframe))
-  ds = ds.batch(batch_size)
-  ds = ds.prefetch(batch_size)
-  return ds
+X = data[['PA', 'BB%', 'K%', 'ISO', 'GB%', 'wRC+']].values
+y = data['category'].values
 
-batch_size= 64
-train_ds = df_to_dataset(train, batch_size=batch_size)
-val_ds = df_to_dataset(val, shuffle=False, batch_size=batch_size)
-test_ds = df_to_dataset(test, shuffle=False, batch_size=batch_size)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-[(train_features, label_batch)] = train_ds.take(1)
-print('Every feature:', list(train_features.keys()))
-print('A batch of ages:', train_features['Age'])
-print('A batch of targets:', label_batch )
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+y_train = tf.keras.utils.to_categorical(y_train - 1, num_classes=3)
+y_test = tf.keras.utils.to_categorical(y_test - 1, num_classes=3)
+
+model = Sequential([
+    Input(shape=(X_train.shape[1],)),
+    Dense(32, activation='relu'),
+    Dense(16, activation='relu'),
+    Dense(8, activation='relu'),
+    Dense(3, activation='softmax')
+])
+
+model.compile(optimizer=Adam(learning_rate=0.001), 
+              loss='categorical_crossentropy', 
+              metrics=['accuracy'])
