@@ -3,9 +3,11 @@ import pandas as pd
 milbHitters = pd.read_csv("milbHitterIndicators.csv")
 milbHitters.dropna(inplace = True)
 
+# Averages a stat weighted by PAs, takes pandas series as arguments
 def avg_by_PA(stat, PA):
     return (stat * PA).sum() / PA.sum()
 
+# Returns a new value for a given statistic based on weighting formula, takes pandas series as arguments
 def stat_by_weight(stat, level, PA):
     temp = zip(stat, level, PA)
     seasons = []
@@ -34,22 +36,27 @@ def stat_by_weight(stat, level, PA):
         loLevelpa = 0
         loLevelAvg = 0
     else:
-        loLevelpa = 0
-        loLevelStatList = []
-        loLevelPAList = []
-        for year in loLevel:
-            loLevelpa += year[2]
-            loLevelStatList.append(year[0])
-            loLevelPAList.append(year[2])
+        loLevelStatList = [x[0] for x in loLevel]
+        loLevelPAList = [x[2] for x in loLevel]
+        loLevelpa = sum(loLevelPAList)
         loLevelStatList = pd.Series(loLevelStatList)
         loLevelPAList = pd.Series(loLevelPAList)
         loLevelAvg = avg_by_PA(loLevelStatList, loLevelPAList)
     
-    TotalPA = loLevelpa + AApa + AAApa
     WeightedPA = (loLevelpa + 2*AApa + 3*AAApa)
+    
+    # Creates denominator for second stat based on the levels the player has data for
+    levelsWeight = 0
+    listOfLevelPAs = [loLevelpa, AApa, AAApa]
+    for i in range(0, 3):
+        if listOfLevelPAs[i] != 0:
+            levelsWeight += i + 1
 
+    # Weighted based on level and PA count
     weightedStat1 = (loLevelAvg*loLevelpa + 2*AAavg*AApa + 3*AAAavg*AAApa) / WeightedPA
-    weightedStat2 = (loLevelAvg + 2*AAavg + 3*AAAavg) / 6
+    # Weighted just on levels
+    weightedStat2 = (loLevelAvg + 2*AAavg + 3*AAAavg) / levelsWeight
+    # Blends above two values
     weightedStat = (3*weightedStat1 + 2*weightedStat2) / 5
     return weightedStat
 
@@ -67,6 +74,8 @@ playerStats = milbHitters.groupby(['Name', 'Level']).apply(
     }), include_groups=False
 ).reset_index(drop=True)
 
+print(playerStats.query('Name == "Bryce Harper"'))
+
 # Uses weighted averages
 cleanedStats = playerStats.groupby(['Name']).apply(
     lambda g: pd.Series({
@@ -80,24 +89,9 @@ cleanedStats = playerStats.groupby(['Name']).apply(
     }), include_groups=False
 ).reset_index(drop=True)
 
-'''
-judge = playerStats.query('Name == "Aaron Judge"')
-
-cleanedStats = judge.groupby(['Name']).apply(
-    lambda g: pd.Series({
-        'Name': g.name,
-        'PA': g['PA'].sum(),
-        'BB%': stat_by_weight(g['BB%'], g['Level'], g['PA']),
-        'K%': stat_by_weight(g['K%'], g['Level'], g['PA']),
-        'ISO': stat_by_weight(g['ISO'], g['Level'], g['PA']),
-        'GB%': stat_by_weight(g['GB%'], g['Level'], g['PA']),
-        'wRC+': stat_by_weight(g['wRC+'], g['Level'], g['PA'])
-    }), include_groups=False
-).reset_index(drop=True)
-'''
-
+# Tests
 print(cleanedStats.head(10))
+print(cleanedStats.query('Name == "Aaron Judge" or Name == "Bryce Harper" or Name == "Jarren Duran"'))
 
-print(cleanedStats.query('Name == "Aaron Judge" or Name == "Mike Trout" or Name == "Jarren Duran"'))
-
+# Exports data to csv
 # cleanedStats.to_csv('weightedMiLBStats.csv', index=False)
