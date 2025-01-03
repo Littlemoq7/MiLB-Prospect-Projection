@@ -39,8 +39,18 @@ history = model.fit(X_train, y_train, epochs=50, batch_size=8, validation_data=(
 test_loss, test_accuracy = model.evaluate(X_test, y_test)
 print(f"Test Accuracy: {test_accuracy:.2f}")
 
-new_player = [[230,0.1,0.29130434699999996,0.14492753600000002,0.449275362,114.00819401335193]]  # Example stats for a new player
-new_player = scaler.transform(new_player)
-prediction = model.predict(new_player)
-predicted_category = prediction.argmax() + 1
-print(f"Predicted Category: {predicted_category}")
+milbHitters = pd.read_csv("weightedMiLBStats.csv")
+
+# List of player names
+playerNames = ["Roman Anthony", "Walker Jenkins", "Brooks Brannon"]
+
+# Query players from the list of names
+playerPredictList = milbHitters[milbHitters['Name'].isin(playerNames)].values.tolist()
+
+# Predict players in list of players
+for player in playerPredictList:
+    new_player = [player[1:]]
+    new_player = scaler.transform(new_player)
+    prediction = model.predict(new_player)
+    predicted_category = prediction.argmax() + 1
+    print(f"{player[0]} Predicted Category: {predicted_category}")
