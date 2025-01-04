@@ -1,1 +1,3 @@
 .DS_Store
+mlbvenv/
+__pycache__/
