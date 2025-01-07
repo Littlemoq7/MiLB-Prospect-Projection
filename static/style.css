@@ -5,3 +5,15 @@ h1 {
 p {
     text-align: center;
 }
+
+#form_container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+form {
+    width: 50%;
+    margin: 0 auto;
+    text-align: center;
+}

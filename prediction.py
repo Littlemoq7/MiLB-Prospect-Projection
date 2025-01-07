@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
@@ -19,17 +20,19 @@ def predict_players(names):
     # Query players from the list of names
     playerPredictList = milbHitters[milbHitters['Name'].isin(names)].values.tolist()
 
-    # Temporary string output return
-    output = ""
+    # List output
+    output = []
 
-    # Predict players in list of players
+    # Return dictionaries of players and their predictions
     for player in playerPredictList:
         new_player = [player[1:]]
         new_player = scaler.transform(new_player)
-        prediction = model.predict(new_player)
-        predicted_category = prediction
-        output += f"{player[0]} Predicted Category: {predicted_category}\n"
+        prediction = model.predict(new_player)[0].tolist()
+        output.append({
+            'name': player[0],
+            'prediction': prediction
+        })
     
     return output
 
-# print(predict_players(playerNames))
+# print(predict_players(playerNames)[0]['prediction'])

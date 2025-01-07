@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block head %}{% endblock %}
+
+{% block body %}
+<h1>Prospect Predictor</h1>
+{% for player in player_prediction %}
+    <p>{{ player['name'] }}: {{ player['prediction'] }}</p>
+{% endfor %}
+{% endblock %}
