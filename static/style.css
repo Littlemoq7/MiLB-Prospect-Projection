@@ -6,6 +6,11 @@ p {
     text-align: center;
 }
 
+.error {
+    color: #b00020;
+    text-align: center;
+}
+
 #form_container {
     width: 100%;
     display: flex;

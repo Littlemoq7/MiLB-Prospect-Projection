@@ -5,6 +5,7 @@
 {% block body %}
 <h1>Prospect Predictor</h1>
 {% for player in player_prediction %}
-    <p>{{ player['name'] }}: {{ player['prediction'] }}</p>
+    <p>{{ player['name'] }}: {{ player['category'] }} ({{ "%.0f"|format(player['confidence'] * 100) }}% confidence)</p>
 {% endfor %}
+<p><a href="{{ url_for('predictPlayer') }}">Evaluate another player</a></p>
 {% endblock %}

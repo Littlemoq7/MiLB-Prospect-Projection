@@ -17,6 +17,6 @@ def export_player_data(filename: str):
         print(f"An error occurred: {e}")
 
 if __name__ == "__main__":
-    output_file = "batting_stats_2023.csv"  
+    output_file = "data/batting_stats_2023.csv"
     export_player_data(output_file)
     

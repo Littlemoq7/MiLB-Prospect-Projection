@@ -1,6 +1,6 @@
 import pandas as pd
 
-milbHitters = pd.read_csv("milbHitterIndicators.csv")
+milbHitters = pd.read_csv("data/milbHitterIndicators.csv")
 milbHitters.dropna(inplace = True)
 
 # Averages a stat weighted by PAs, takes pandas series as arguments

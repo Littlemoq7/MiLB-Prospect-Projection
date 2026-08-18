@@ -1,38 +1,49 @@
-import numpy as np
-import tensorflow as tf
+import joblib
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
 
-model = tf.keras.models.load_model('model.keras')
-scaler = StandardScaler()
-data = pd.read_csv('mergedOutput.csv')
-X = data[['PA', 'BB%', 'K%', 'ISO', 'GB%', 'wRC+']].values
-scaler = StandardScaler()
-scaler.fit_transform(X)
+# The saved bundle carries the fitted StandardScaler inside the pipeline, so
+# inference uses exactly the transform the model was trained with. Refitting a
+# scaler here (the previous approach) produced slightly different means and
+# scales than training did, skewing every prediction.
+bundle = joblib.load('model.joblib')
+model = bundle['model']
+FEATURES = bundle['features']
+CATEGORY_LABELS = bundle['labels']
 
 milbHitters = pd.read_csv("weightedMiLBStats.csv")
 
 # List of player names
 playerNames = ["Roman Anthony", "Walker Jenkins", "Brooks Brannon", "Mike Trout", "Juan Soto"]
 
+
 def predict_players(names):
+    """Predict MLB performance tiers for the given player names.
 
-    # Query players from the list of names
-    playerPredictList = milbHitters[milbHitters['Name'].isin(names)].values.tolist()
+    Returns (predictions, not_found). Name matching is exact.
+    """
+    matches = milbHitters[milbHitters['Name'].isin(names)]
 
-    # List output
     output = []
+    if not matches.empty:
+        # Select features by name so a column reorder in the CSV can't silently
+        # feed the model the wrong values.
+        probabilities = model.predict_proba(matches[FEATURES].values)
 
-    # Return dictionaries of players and their predictions
-    for player in playerPredictList:
-        new_player = [player[1:]]
-        new_player = scaler.transform(new_player)
-        prediction = model.predict(new_player)[0].tolist()
-        output.append({
-            'name': player[0],
-            'prediction': prediction
-        })
-    
-    return output
+        # predict_proba's columns follow model.classes_ (the 1/2/3 category
+        # codes), so map each column back to its label rather than assuming order.
+        labels = [CATEGORY_LABELS[category - 1] for category in model.classes_]
 
-# print(predict_players(playerNames)[0]['prediction'])
+        for name, row in zip(matches['Name'], probabilities):
+            top = int(row.argmax())
+            output.append({
+                'name': name,
+                'category': labels[top],
+                'confidence': float(row[top]),
+                'probabilities': {label: float(p) for label, p in zip(labels, row)},
+            })
+
+    # Names that were requested but had no matching stats row
+    found_names = set(matches['Name'])
+    not_found = [name for name in names if name not in found_names]
+
+    return output, not_found

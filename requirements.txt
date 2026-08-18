@@ -1,0 +1,17 @@
+# Core app + model dependencies (versions match the working mlbvenv)
+Flask==3.1.0
+scikit-learn==1.6.0
+joblib==1.4.2
+pandas==2.2.3
+numpy==2.0.2
+
+# Optional: only needed to reproduce the neural-network baseline in TensorFlow.py.
+# Left out because it is ~1.1GB and nothing the app serves imports it -- train.py
+# and prediction.py are pure scikit-learn. Install it separately to re-run that
+# comparison:  ./mlbvenv/bin/pip install tensorflow==2.18.0
+# tensorflow==2.18.0
+
+# Optional: only needed to re-pull raw MLB data via mlbdatapullinh.py.
+# Left out because it pins older numpy/pandas and can downgrade the versions
+# above. Install into a separate environment if you need to regenerate raw data.
+# pybaseball

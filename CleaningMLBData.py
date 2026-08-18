@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load the CSV file into a DataFrame
-df = pd.read_csv('MLB_Cleaned.csv')
+df = pd.read_csv('data/MLB_Cleaned.csv')
 
 # Ensure the column names match your dataset (adjust 'player' and 'season' if necessary)
 # Group by player and calculate their total number of seasons and latest season
@@ -20,4 +20,4 @@ def categorize(wRCavg):
 
 player_summary['category'] = player_summary['wRCavg'].apply(categorize)
 player_summary = player_summary.drop(columns=['wRCavg'])
-player_summary.to_csv('MLB_GroupedSimple.csv', index=False)
+player_summary.to_csv('data/MLB_GroupedSimple.csv', index=False)
