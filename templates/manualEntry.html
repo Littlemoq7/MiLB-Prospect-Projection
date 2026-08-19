@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block head %}{% endblock %}
+
+{% block body %}
+<h1>Prospect Predictor</h1>
+<p><a href="{{ url_for('predictPlayer') }}">Search by player name</a></p>
+
+{% if error %}
+    <p class="error">{{ error }}</p>
+{% endif %}
+
+<div id="form_container">
+    <form action="{{ url_for('manualEntry') }}" method="post" class="manual-form">
+        {% for feature in features %}
+        <label for="{{ feature }}">
+            {{ feature }}
+            <span class="hint">{{ hints.get(feature, '') }}</span>
+            <input type="number" step="any" id="{{ feature }}" name="{{ feature }}" value="{{ values.get(feature, '') }}" required>
+        </label>
+        {% endfor %}
+        <input type="submit" value="Evaluate">
+    </form>
+</div>
+
+{% if result %}
+<div id="manual_result">
+    <p>{{ result['category'] }} ({{ "%.0f"|format(result['confidence'] * 100) }}% confidence)</p>
+    <ul class="probabilities">
+        {% for label, prob in result['probabilities'].items() %}
+        <li>{{ label }}: {{ "%.0f"|format(prob * 100) }}%</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endblock %}

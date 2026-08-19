@@ -21,32 +21,22 @@ Tiers are defined by a player's career MLB wRC+, weighted by plate appearances:
 
 ## Running the app
 
-Install dependencies (a `mlbvenv/` virtualenv is already set up locally):
-
 ```bash
-python3 -m venv mlbvenv
-./mlbvenv/bin/pip install -r requirements.txt
+./start.sh
 ```
 
-**Start the Flask backend:**
+This sets up the `mlbvenv/` virtualenv and `frontend/node_modules` on first run (if missing), trains the model if `model.joblib` isn't present, then starts the Flask API in the background and the Svelte frontend in the foreground, opening http://localhost:5173 — the **Svelte app is the main way to use Prospect Predictor**, with a name search (autocomplete included) and a manual stat-entry form for players not in the dataset.
+
+Try `Roman Anthony`, `Walker Jenkins`, or `Brooks Brannon` in the search tab.
+
+To run the pieces yourself instead:
 
 ```bash
-./mlbvenv/bin/python app.py
+./mlbvenv/bin/python app.py       # Flask API on :5001
+cd frontend && npm install && npm run dev   # Svelte UI on :5173
 ```
 
-This serves both the JSON API and a minimal server-rendered UI at http://localhost:5000.
-
-**Start the Svelte frontend** (recommended — nicer UI) in a second terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open http://localhost:5173. Vite proxies `/api` to Flask, so no CORS config is needed.
-
-Try `Roman Anthony`, `Walker Jenkins`, or `Brooks Brannon`.
+Vite proxies `/api` to Flask, so no CORS config is needed. Flask also serves a minimal server-rendered fallback UI directly at http://localhost:5001 for use without the frontend.
 
 ## API
 
@@ -66,7 +56,9 @@ Try `Roman Anthony`, `Walker Jenkins`, or `Brooks Brannon`.
 }
 ```
 
-Unknown players return `404` with an `error` message. Name matching is exact.
+Unknown players return `404` with an `error` message. Name matching is exact — use `GET /api/player-names?q=<query>` for autocomplete suggestions (up to 10 matching names).
+
+`POST /api/predict-seasons` — body `{"seasons": [{"Season": 2023, "Level": "AA", "PA": 400, "BB%": 0.09, "K%": 0.21, "ISO": 0.15, "GB%": 0.42, "wRC+": 105, "Age": 22}, ...]}`, for evaluating a prospect season-by-season instead of looking one up by name. `AgeRelLevel` is deliberately not part of the input — it's derived per season from `Age` minus the historical PA-weighted average age at that `Season`/`Level` (falling back to that level's all-time average age if the exact season isn't on file), then the seasons are aggregated into one feature row using the same level-weighting (`AAA` 3x, `AA` 2x, everything else 1x) `CleaningMLBData.py`/`dataCleaning.py` used to build the training data. Returns the same shape as `/api/predict` minus `name`. `GET /api/season-fields` returns the per-season field list + hints and the valid `Level` values, which the Svelte form renders itself from.
 
 ## Project layout
 

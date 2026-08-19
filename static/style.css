@@ -22,3 +22,63 @@ form {
     margin: 0 auto;
     text-align: center;
 }
+
+.autocomplete {
+    position: relative;
+    display: inline-block;
+}
+
+.suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-top: none;
+    max-height: 220px;
+    overflow-y: auto;
+    text-align: left;
+    z-index: 10;
+}
+
+.suggestions li {
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.suggestions li:hover,
+.suggestions li.active {
+    background: #eee;
+}
+
+.manual-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+}
+
+.manual-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.manual-form .hint {
+    font-size: 0.8em;
+    color: #666;
+    font-weight: normal;
+}
+
+#manual_result {
+    text-align: center;
+}
+
+.probabilities {
+    list-style: none;
+    padding: 0;
+}

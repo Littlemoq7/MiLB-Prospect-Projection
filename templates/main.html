@@ -8,9 +8,16 @@
     <p class="error">{{ error }}</p>
 {% endif %}
 <div id="form_container">
-    <form action="{{ url_for('predictPlayer') }}" method="post">
-        <label for="player-name">Player Name: <input type="text" id="name-input" name="player-name" required></label>
+    <form action="{{ url_for('predictPlayer') }}" method="post" autocomplete="off">
+        <label for="name-input">Player Name:
+            <span class="autocomplete">
+                <input type="text" id="name-input" name="player-name" required>
+                <ul id="name-suggestions" class="suggestions" hidden></ul>
+            </span>
+        </label>
         <input type="submit" value="Evaluate Player">
     </form>
-<div>
+</div>
+<p><a href="{{ url_for('manualEntry') }}">Or enter stats manually</a></p>
+<script src="{{ url_for('static', filename='autocomplete.js') }}"></script>
 {% endblock %}
