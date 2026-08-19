@@ -4,9 +4,14 @@ Uses multinomial logistic regression inside a scikit-learn Pipeline, so the
 StandardScaler is fit as part of the model and saved with it. That keeps
 training and inference on an identical transform.
 
-Evaluation is 5-fold stratified cross-validation over all 591 rows rather than
-a single 10% holdout -- a 60-player test set swings ~30 accuracy points
-depending on the split, which is far too noisy to make decisions from.
+Evaluation is 5-fold stratified cross-validation over all rows rather than a
+single holdout -- a small test set swings wildly in accuracy depending on the
+split, which is far too noisy to make decisions from.
+
+Training data now includes minor leaguers who never reached the majors
+(category 0, see CleaningMLBData.py), not just graduates ranked against each
+other -- without them the model never saw what actually separates a future
+big leaguer from organizational depth.
 """
 
 import joblib
@@ -18,9 +23,9 @@ from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_va
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-FEATURES = ['PA', 'BB%', 'K%', 'ISO', 'GB%', 'wRC+']
-# Model categories are 1/2/3; index into this list with (category - 1)
-CATEGORY_LABELS = ['Below Average', 'Average', 'Above Average']
+FEATURES = ['PA', 'BB%', 'K%', 'ISO', 'GB%', 'wRC+', 'Age', 'AgeRelLevel']
+# Model categories are 0/1/2/3; index into this list directly with `category`
+CATEGORY_LABELS = ['Did Not Reach MLB', 'Below Average', 'Average', 'Above Average']
 MODEL_PATH = 'model.joblib'
 
 data = pd.read_csv('mergedOutput.csv')
@@ -30,13 +35,22 @@ y = data['category'].values
 # The scaler lives inside the pipeline so cross-validation refits it on each
 # training fold only. Fitting it once on all rows would leak test-fold
 # statistics into training and inflate the scores below.
-model = make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000))
+#
+# class_weight='balanced' matters a lot more now than it used to: "Did Not
+# Reach MLB" outnumbers the three graduate classes combined roughly 5 to 1,
+# so an unweighted fit could just predict it for everyone and still score
+# well on accuracy. If the classification report below still shows the
+# graduate classes getting swamped, the next lever is downsampling the
+# majority class -- not attempted here since it's a call best made from real
+# CV output, not guessed in advance.
+model = make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000, class_weight='balanced'))
 
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
 scores = cross_val_score(model, X, y, cv=cv, scoring='accuracy')
 
-# Accuracy alone is misleading here: the classes are imbalanced 302/212/77, so
-# always guessing "Below Average" already scores ~51%.
+# Accuracy alone is misleading here: the classes are heavily imbalanced (see
+# the class counts printed below), so always guessing the majority class
+# already scores well without the model learning anything.
 baseline = pd.Series(y).value_counts(normalize=True).max()
 
 print(f'Rows: {len(data)}   class counts: {pd.Series(y).value_counts().sort_index().to_dict()}')

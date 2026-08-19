@@ -1,20 +1,23 @@
 # Prospect Predictor
 
-Predicts whether a minor-league hitter will become a **below-average**, **average**, or **above-average** MLB bat, using level-weighted MiLB statistics and a small Keras neural network.
+Predicts whether a minor-league hitter will become a **below-average**, **average**, or **above-average** MLB bat — or never reach the majors at all — using level-weighted MiLB statistics and a multinomial logistic regression.
 
-Enter a prospect's name and the app returns a predicted tier plus the model's confidence across all three categories.
+Enter a prospect's name and the app returns a predicted tier plus the model's confidence across all four categories.
 
 ## How it works
 
-Minor-league stats are weighted by both **level** (AAA counts 3×, AA 2×, A-and-below 1×) and **plate appearances**, so a strong AAA season outweighs the same line in Single-A. Those weighted stats (`PA`, `BB%`, `K%`, `ISO`, `GB%`, `wRC+`) feed a multinomial logistic regression that outputs a probability for each tier.
+Minor-league stats are weighted by both **level** (AAA counts 3×, AA 2×, A-and-below 1×) and **plate appearances**, so a strong AAA season outweighs the same line in Single-A. Those weighted stats (`PA`, `BB%`, `K%`, `ISO`, `GB%`, `wRC+`, `Age`, `AgeRelLevel`) feed a multinomial logistic regression that outputs a probability for each tier.
 
-Tiers are defined by a player's career average MLB wRC+:
+Training data includes minor leaguers who never reached the majors, not just graduates ranked against each other — without them the model would only be able to answer "given a player reached the majors, how good were they?" instead of "will this prospect be good?"
 
-| Tier | Career avg wRC+ |
+Tiers are defined by a player's career MLB wRC+, weighted by plate appearances:
+
+| Tier | Definition |
 | --- | --- |
-| Below Average | < 100 |
-| Average | 100 – 120 |
-| Above Average | > 120 |
+| Did Not Reach MLB | Last MiLB season ≤ 2018 (6+ years of runway) and career MiLB PA ≥ 500, but never accumulated real MLB playing time |
+| Below Average | Career avg wRC+ < 95 |
+| Average | Career avg wRC+ 95 – 114 |
+| Above Average | Career avg wRC+ ≥ 115 |
 
 ## Running the app
 
@@ -52,12 +55,13 @@ Try `Roman Anthony`, `Walker Jenkins`, or `Brooks Brannon`.
 ```json
 {
   "name": "Roman Anthony",
-  "category": "Average",
-  "confidence": 0.698,
+  "category": "Above Average",
+  "confidence": 0.703,
   "probabilities": {
-    "Below Average": 0.065,
-    "Average": 0.698,
-    "Above Average": 0.237
+    "Did Not Reach MLB": 0.036,
+    "Below Average": 0.055,
+    "Average": 0.207,
+    "Above Average": 0.703
   }
 }
 ```
@@ -78,21 +82,26 @@ data/                Source + intermediate CSVs
 
 ## Model
 
-`train.py` fits a multinomial logistic regression inside a scikit-learn `Pipeline`, so the `StandardScaler` is saved as part of the model and inference uses exactly the transform training used.
+`train.py` fits a multinomial logistic regression (`class_weight='balanced'`) inside a scikit-learn `Pipeline`, so the `StandardScaler` is saved as part of the model and inference uses exactly the transform training used.
 
-Evaluation is 5-fold stratified cross-validation. Retrain and see the full report with:
+Evaluation is 5-fold stratified cross-validation over all 4,590 labeled players. Overall accuracy isn't a meaningful headline number here — "Did Not Reach MLB" alone makes up 87% of the data, so a model that just guessed that class for everyone would already score 87.1%, close to what's actually shipped (73.4%). `class_weight='balanced'` deliberately trades away some of that raw accuracy to actually catch the minority classes, which is the entire point of the app. Recall per tier is the number that matters:
+
+| Tier | Recall | Support |
+| --- | --- | --- |
+| Did Not Reach MLB | 78% | 3,997 |
+| Below Average | 49% | 215 |
+| Average | 30% | 260 |
+| **Above Average** | **59%** | 118 |
+
+For comparison, the previous 3-class model (graduates only, no `Age` feature, unweighted labels) recalled only 17% of true above-average hitters (13 of 77) — the tier the app most wants to surface was the one it found least reliably. Fixing the survivorship bias and class-weighting the loss function raised that to 59%.
+
+Retrain and see the full report (class counts, join diagnostics, confusion matrix) with:
 
 ```bash
 ./mlbvenv/bin/python train.py
 ```
 
-| Model | 5-fold CV accuracy |
-| --- | --- |
-| Always guess "Below Average" | 51.1% |
-| Neural network (`TensorFlow.py`) | 53.0% (± 5.1) |
-| **Logistic regression (served)** | **57.5% (± 2.5)** |
-
-The neural network is kept only to document why it isn't shipped: on 591 rows with 6 features it lands near the majority-class baseline with twice the variance. `TensorFlow.py` deliberately saves nothing.
+`TensorFlow.py` is kept only to document why a neural net isn't shipped: evaluated against the old graduates-only dataset (591 rows, 3 classes, no `Age` feature), it landed near the majority-class baseline with twice the variance of logistic regression. It has not been re-evaluated against the current 4-class dataset. `TensorFlow.py` deliberately saves nothing.
 
 TensorFlow is **not** installed by `requirements.txt` — it is ~1.1GB and nothing the app serves imports it. To reproduce that baseline row:
 
@@ -103,26 +112,35 @@ TensorFlow is **not** installed by `requirements.txt` — it is ~1.1GB and nothi
 
 ## Data pipeline
 
-The generated CSVs are committed, so you only need to re-run these to rebuild from scratch:
+The generated CSVs are committed, so you only need to re-run these to rebuild from scratch. Order matters — `CleaningMLBData.py` reads `weightedMiLBStats.csv`, so `dataCleaning.py` must run first:
 
-| Step | Script | Input | Output |
+| Step | Script | Reads | Writes |
 | --- | --- | --- | --- |
-| 1 | `mlbdatapullinh.py` | pybaseball API | `data/batting_stats_2023.csv` |
-| 2 | `CleaningMLBData.py` | `data/MLB_Cleaned.csv` | `data/MLB_GroupedSimple.csv` |
-| 3 | `dataCleaning.py` | `data/milbHitterIndicators.csv` | `weightedMiLBStats.csv` |
-| 4 | `merge.py` | outputs of 2 + 3 | `mergedOutput.csv` |
-| 5 | `train.py` | `mergedOutput.csv` | `model.joblib` |
+| 1 | `dataCleaning.py` | `data/milbHitterIndicators.csv` | `weightedMiLBStats.csv` |
+| 2 | `CleaningMLBData.py` | `data/MLB_Cleaned.csv`, `data/milbHitterIndicators.csv`, `weightedMiLBStats.csv` | `data/MLB_GroupedSimple.csv` |
+| 3 | `merge.py` | outputs of 1 + 2 | `mergedOutput.csv` |
+| 4 | `train.py` | `mergedOutput.csv` | `model.joblib` |
+
+Run the whole pipeline and start the app in one go:
+
+```bash
+./mlbvenv/bin/python3 dataCleaning.py && \
+./mlbvenv/bin/python3 CleaningMLBData.py && \
+./mlbvenv/bin/python3 merge.py && \
+./mlbvenv/bin/python3 train.py && \
+./mlbvenv/bin/python3 app.py
+```
 
 Notes:
 
-- `data/milbHitterIndicators.csv` is the raw MiLB export and **cannot be regenerated** by any script here — don't delete it.
-- The `to_csv` export at the end of `dataCleaning.py` is intentionally commented out so running the script can't silently overwrite the `weightedMiLBStats.csv` the trained model depends on. Uncomment it deliberately.
-- Step 1 needs `pybaseball` (see `requirements.txt`); its output is not currently consumed directly by step 2.
+- `data/milbHitterIndicators.csv` and `data/MLB_Cleaned.csv` are raw exports and **cannot be regenerated** by any script here — don't delete them.
+- `merge.py` joins on FanGraphs `PlayerId`/`IDfg` first (collision-free) and only falls back to a `Name` join for players without a matching numeric id — printed diagnostics show how many matched each way.
+- `mlbdatapullinh.py` needs `pybaseball` (not installed — see `requirements.txt`) and isn't part of this pipeline; its output isn't consumed by any other script.
 
 ## Known limitations
 
-- **Modest accuracy.** 57.5% against a 51.1% baseline. Treat predictions as directional, not authoritative.
-- **"Above Average" is the weak class.** The 591 rows split 302 / 212 / 77, and the model recalls only 17% of true above-average hitters (13 of 77) — the tier the app most wants to surface is the one it finds least reliably. See the confusion matrix printed by `train.py`.
-- **Survivorship bias.** `merge.py`'s inner join keeps only players who reached MLB, discarding 13,339 of 13,930 (95.8%). The model effectively answers "given a player reached the majors, how good were they?" rather than "will this prospect be good?" Fixing this is the largest available improvement.
+- **Modest per-tier recall.** "Average" recall is only 30% — the model still confuses that tier with its neighbors more than it should. Treat predictions as directional, not authoritative.
+- **"Did Not Reach MLB" ground truth is imperfect.** A player counts as "graduated" if they appear in `data/MLB_Cleaned.csv`, which itself only includes MLB seasons with PA ≥ 300. A player with only short MLB cameos would be mislabeled as "Did Not Reach MLB" — a limitation of the data on hand, not something the current pipeline corrects for.
+- **The ID-based join only recovered a handful of extra graduates.** Most of the ~220 graduates still missing a MiLB match are genuine data-coverage gaps (players who debuted before the 2006 start of MiLB stat tracking, or international signees who skipped affiliated ball), not name-matching bugs.
 - **Exact name matching only.** No fuzzy search, so typos and nicknames return "not found".
 - `app.secret_key` is hardcoded and `debug=True` — fine for a local demo, not for deployment.

@@ -29,9 +29,9 @@ def predict_players(names):
         # feed the model the wrong values.
         probabilities = model.predict_proba(matches[FEATURES].values)
 
-        # predict_proba's columns follow model.classes_ (the 1/2/3 category
+        # predict_proba's columns follow model.classes_ (the 0/1/2/3 category
         # codes), so map each column back to its label rather than assuming order.
-        labels = [CATEGORY_LABELS[category - 1] for category in model.classes_]
+        labels = [CATEGORY_LABELS[category] for category in model.classes_]
 
         for name, row in zip(matches['Name'], probabilities):
             top = int(row.argmax())

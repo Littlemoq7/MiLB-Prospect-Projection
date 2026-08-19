@@ -1,6 +1,4 @@
 <script>
-  const CATEGORIES = ['Below Average', 'Average', 'Above Average']
-
   let playerName = $state('')
   let status = $state('idle') // idle | loading | success | error
   let result = $state(null)
@@ -66,7 +64,7 @@
       </div>
 
       <div class="bars">
-        {#each CATEGORIES as category}
+        {#each Object.keys(result.probabilities) as category}
           {@const value = result.probabilities[category] ?? 0}
           <div class="bar-row">
             <span class="bar-label">{category}</span>
@@ -185,6 +183,11 @@
     font-weight: 400;
     font-size: 0.8rem;
     opacity: 0.85;
+  }
+
+  .category-did-not-reach-mlb {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
   }
 
   .category-below-average {
