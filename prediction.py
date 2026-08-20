@@ -194,3 +194,24 @@ def predict_from_seasons(rows):
     """Predict an MLB performance tier from individually entered MiLB
     seasons, aggregating them the same way the training data was built."""
     return predict_manual(aggregate_season_rows(rows))
+
+
+def top_prospects(season=2025, category='Above Average', limit=5, min_pa=300):
+    """Rank players who played a given season with the model's confidence
+    (predicted probability) that they land in `category`.
+    """
+    season_names = set(_milbIndicators.loc[_milbIndicators['Season'] == season, 'Name'])
+    matches = milbHitters[milbHitters['Name'].isin(season_names) & (milbHitters['PA'] >= min_pa)]
+    if matches.empty:
+        return []
+
+    probabilities = model.predict_proba(matches[FEATURES].values)
+    labels = [CATEGORY_LABELS[c] for c in model.classes_]
+    category_index = labels.index(category)
+
+    ranked = sorted(
+        zip(matches['Name'], probabilities[:, category_index]),
+        key=lambda pair: pair[1],
+        reverse=True,
+    )
+    return [{'name': name, 'confidence': float(confidence)} for name, confidence in ranked[:limit]]

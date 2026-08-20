@@ -1,10 +1,23 @@
 # Prospect Predictor
 
-Predicts whether a minor-league hitter will become a **below-average**, **average**, or **above-average** MLB bat — or never reach the majors at all — using level-weighted MiLB statistics and a multinomial logistic regression.
+**A full-stack ML app that projects whether a minor-league hitter becomes a below-average, average, or above-average MLB bat — or never reaches the majors at all.**
 
-NOTE: Data from and references to MLB are for educational and non-commercial purposes only
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-3.1-000000?logo=flask&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-1.6-F7931E?logo=scikitlearn&logoColor=white)
+![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00?logo=svelte&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
 
-Enter a prospect's name and the app returns a predicted tier plus the model's confidence across all four categories.
+NOTE: Data from and references to MLB are for educational and non-commercial purposes only.
+
+Enter a prospect's name and the app returns a predicted tier plus the model's confidence across all four categories, backed by a Flask API and a Svelte frontend.
+
+## Highlights
+
+- **Fixed a survivorship-bias flaw in the original approach.** Training only on players who'd already reached the majors meant the model could answer "how good is this graduate?" but not "will this prospect make it?" Rebuilding the label set to include the ~87% of minor leaguers who never reached MLB is what makes this a genuine prospect-projection tool rather than a graduate-ranking one.
+- **3.5x recall on the highest-value class.** The tier this app most wants to get right — future above-average bats — went from 17% recall (13/77) under the old graduates-only model to **59% recall (70/118)** after fixing the label bias and adding class-balanced weighting.
+- **Custom feature engineering for minor-league data**, weighting each season by both **level** (AAA 3×, AA 2×, everything below 1×) and **plate appearances**, plus an age-relative-to-level feature computed from the historical PA-weighted average age at each level/season.
+- **End-to-end product, not just a notebook**: a Flask JSON API, a Svelte SPA with live name autocomplete, and a season-by-season manual entry form for prospects not yet in the dataset — all backed by a reproducible data pipeline from raw exports to a served `model.joblib`.
 
 ## How it works
 
@@ -20,6 +33,15 @@ Tiers are defined by a player's career MLB wRC+, weighted by plate appearances:
 | Below Average | Career avg wRC+ < 95 |
 | Average | Career avg wRC+ 95 – 114 |
 | Above Average | Career avg wRC+ ≥ 115 |
+
+## Tech stack
+
+| Layer | Tools |
+| --- | --- |
+| Model | scikit-learn (multinomial logistic regression + `StandardScaler` in a `Pipeline`), pandas, numpy, joblib |
+| API | Flask (JSON API + server-rendered fallback UI) |
+| Frontend | Svelte 5 + Vite |
+| Data pipeline | pandas-based cleaning/merging scripts over FanGraphs MiLB/MLB exports |
 
 ## Running the app
 
@@ -74,7 +96,7 @@ frontend/            Svelte + Vite UI
 data/                Source + intermediate CSVs
 ```
 
-## Model
+## Model & results
 
 `train.py` fits a multinomial logistic regression (`class_weight='balanced'`) inside a scikit-learn `Pipeline`, so the `StandardScaler` is saved as part of the model and inference uses exactly the transform training used.
 

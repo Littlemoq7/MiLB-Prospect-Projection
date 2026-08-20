@@ -6,6 +6,7 @@ from prediction import (
     predict_manual,
     predict_from_seasons,
     search_player_names,
+    top_prospects,
     FEATURES,
     SEASON_FIELDS,
     LEVELS,
@@ -61,6 +62,10 @@ def predictPlayer():
 @app.route('/api/player-names')
 def apiPlayerNames():
     return jsonify(search_player_names(request.args.get('q', '')))
+
+@app.route('/api/top-prospects')
+def apiTopProspects():
+    return jsonify(top_prospects())
 
 @app.route('/api/season-fields')
 def apiSeasonFields():

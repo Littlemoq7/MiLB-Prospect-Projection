@@ -2,6 +2,7 @@
   import NameSearchForm from './lib/NameSearchForm.svelte'
   import ManualStatsForm from './lib/ManualStatsForm.svelte'
   import ResultCard from './lib/ResultCard.svelte'
+  import TopProspects from './lib/TopProspects.svelte'
 
   let mode = $state('search') // search | manual
   let status = $state('idle') // idle | loading | success | error
@@ -82,6 +83,8 @@
   {#if status === 'success' && result}
     <ResultCard {result} title={result.name ?? null} />
   {/if}
+
+  <TopProspects />
 </main>
 
 <style>
