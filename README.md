@@ -2,6 +2,8 @@
 
 Predicts whether a minor-league hitter will become a **below-average**, **average**, or **above-average** MLB bat — or never reach the majors at all — using level-weighted MiLB statistics and a multinomial logistic regression.
 
+NOTE: Data from and references to MLB are for educational and non-commercial purposes only
+
 Enter a prospect's name and the app returns a predicted tier plus the model's confidence across all four categories.
 
 ## How it works
@@ -131,8 +133,5 @@ Notes:
 
 ## Known limitations
 
-- **Modest per-tier recall.** "Average" recall is only 30% — the model still confuses that tier with its neighbors more than it should. Treat predictions as directional, not authoritative.
-- **"Did Not Reach MLB" ground truth is imperfect.** A player counts as "graduated" if they appear in `data/MLB_Cleaned.csv`, which itself only includes MLB seasons with PA ≥ 300. A player with only short MLB cameos would be mislabeled as "Did Not Reach MLB" — a limitation of the data on hand, not something the current pipeline corrects for.
-- **The ID-based join only recovered a handful of extra graduates.** Most of the ~220 graduates still missing a MiLB match are genuine data-coverage gaps (players who debuted before the 2006 start of MiLB stat tracking, or international signees who skipped affiliated ball), not name-matching bugs.
-- **Exact name matching only.** No fuzzy search, so typos and nicknames return "not found".
-- `app.secret_key` is hardcoded and `debug=True` — fine for a local demo, not for deployment.
+- **Modest per-tier recall.** "Average" recall is only 30% — it's a narrow 95–114 wRC+ band squeezed between two open-ended tiers, so borderline players easily slip into "Below Average" or "Above Average" instead. Treat predictions as directional, not authoritative.
+- **"Did Not Reach MLB" ground truth is imperfect.** A player counts as "graduated" if they appear in `data/MLB_Cleaned.csv`, which itself only includes MLB seasons with PA ≥ 300. A player with only short MLB cameos is labeled as "Did Not Reach MLB".

@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, render_template, url_for, redirect, session, request, jsonify
 from prediction import (
     predict_players,
@@ -10,7 +12,10 @@ from prediction import (
 )
 
 app = Flask(__name__)
-app.secret_key = 'Jarren Duran'.encode('utf8')
+# Falls back to a fresh random key each run -- fine here since the session only
+# holds a short-lived prediction within a single process. Set FLASK_SECRET_KEY
+# if you need sessions to survive a restart or run multiple worker processes.
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
 
 # Short explanations shown under each manual-entry field, since several
 # features (percentages as decimals, AgeRelLevel) aren't self-explanatory.
